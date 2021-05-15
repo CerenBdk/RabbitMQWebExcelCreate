@@ -7,11 +7,13 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using RestSharp;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -53,10 +55,10 @@ namespace FileCreateWorkerService
 
         private async Task Consumer_Received(object sender, BasicDeliverEventArgs @event)
         {
-            
+             await Task.Delay(5000);
             var createExcelMessage = JsonSerializer.Deserialize<CreateExcelMessage>(Encoding.UTF8.GetString(@event.Body.ToArray()));
 
-            MemoryStream memoryStream =  new MemoryStream();
+            MemoryStream memoryStream = new MemoryStream();
 
             var workBook = new XLWorkbook();
             var dataSet = new DataSet();
@@ -66,23 +68,36 @@ namespace FileCreateWorkerService
             workBook.Worksheets.Add(dataSet);
             workBook.SaveAs(memoryStream);
 
-            MultipartFormDataContent multipartFormDataContent = new();
-            multipartFormDataContent.Add(new ByteArrayContent(memoryStream.ToArray()), "file", Guid.NewGuid().ToString() + ".xlsx");
+            //MultipartFormDataContent multipartFormDataContent = new();
+            //multipartFormDataContent.Add(new ByteArrayContent(memoryStream.ToArray()), "file", Guid.NewGuid().ToString() + ".xlsx");
 
-            var baseUrl = "https://localhost:44324/api/files/upload?fileId=" + createExcelMessage.FileId;
+            //var baseUrl = "https://localhost:44324/api/files";
 
-            using (var httpClient = new HttpClient())
+            var client = new RestClient("https://localhost:44324/api/files/upload?fileId=" + createExcelMessage.FileId);
+            client.Timeout = -1;
+            ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
+            client.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+            var request = new RestRequest(Method.POST);
+            request.AddFile("file", memoryStream.ToArray(), Guid.NewGuid().ToString() + ".xlsx");
+            IRestResponse response = client.Execute(request);
+
+            if (response.IsSuccessful)
             {
-               
-                var response = await httpClient.PostAsync(baseUrl, multipartFormDataContent);
-
-                if (response.IsSuccessStatusCode)
-                {
-
-                    _logger.LogInformation($"File ( Id : {createExcelMessage.FileId}) was created by successful");
-                    _channel.BasicAck(@event.DeliveryTag, false);
-                }
+                _logger.LogInformation($"File ( Id : {createExcelMessage.FileId}) was created by successful");
+                _channel.BasicAck(@event.DeliveryTag, false);
             }
+            //using (var httpClient = new HttpClient())
+            //{
+
+            //    var response = await httpClient.PostAsync($"{baseUrl}?fileId={createExcelMessage.FileId}", multipartFormDataContent);
+
+            //    if (response.IsSuccessStatusCode)
+            //    {
+
+            //        _logger.LogInformation($"File ( Id : {createExcelMessage.FileId}) was created by successful");
+            //        _channel.BasicAck(@event.DeliveryTag, false);
+            //    }
+            //}
 
         }
 

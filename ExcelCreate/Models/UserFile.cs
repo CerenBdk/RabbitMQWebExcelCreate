@@ -9,7 +9,7 @@ namespace ExcelCreate.Models
 
     public enum FileStatus
     { 
-        Createing,
+        Creating,
         Completed
     }
 

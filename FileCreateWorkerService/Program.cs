@@ -30,8 +30,9 @@ namespace FileCreateWorkerService
                     });
 
                     services.AddSingleton<RabbitMQClientService>();
-                    services.AddSingleton(sp => new ConnectionFactory() { Uri = new Uri(configuration.GetConnectionString("RabbitMQ")), DispatchConsumersAsync = true });
                     services.AddHostedService<Worker>();
+                    services.AddSingleton(sp => new ConnectionFactory() { Uri = new Uri(configuration.GetConnectionString("RabbitMQ")), DispatchConsumersAsync = true });
+                    
                     //services.AddHostedService<WorkerTwo>();
                 });
     }
