@@ -39,7 +39,7 @@ namespace ExcelCreate.Controllers
             UserFile userFile = new() { 
                 UserId = user.Id,
                 FileName = fileName,
-                FileStatus = FileStatus.Createing
+                FileStatus = FileStatus.Creating
             };
 
             await _context.UserFiles.AddAsync(userFile);
@@ -54,7 +54,7 @@ namespace ExcelCreate.Controllers
         public async Task<IActionResult> Files() 
         {
             var user = await _userManager.FindByNameAsync(User.Identity.Name);
-            var result = await _context.UserFiles.Where(x => x.UserId == user.Id).ToListAsync();
+            var result = await _context.UserFiles.Where(x => x.UserId == user.Id).OrderByDescending( x => x.Id).ToListAsync();
 
             return View(result);
         }
