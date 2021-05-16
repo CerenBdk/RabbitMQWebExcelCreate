@@ -1,6 +1,8 @@
-﻿using ExcelCreate.Models;
+﻿using ExcelCreate.Hubs;
+using ExcelCreate.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -16,10 +18,12 @@ namespace ExcelCreate.Controllers
     {
 
         private readonly AppDbContext _context;
+        private readonly IHubContext<MyHub> _hubContext;
 
-        public FilesController(AppDbContext context)
+        public FilesController(AppDbContext context, IHubContext<MyHub> hubContext)
         {
             _context = context;
+            _hubContext = hubContext;
         }
 
         [HttpPost("upload")]
@@ -40,6 +44,8 @@ namespace ExcelCreate.Controllers
             userFile.FilePath = filePath;
             userFile.FileStatus = FileStatus.Completed;
             await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.User(userFile.UserId).SendAsync("CompletedFile");
 
             return Ok();
         }

@@ -1,3 +1,4 @@
+using ExcelCreate.Hubs;
 using ExcelCreate.Models;
 using ExcelCreate.Services;
 using Microsoft.AspNetCore.Builder;
@@ -41,7 +42,7 @@ namespace ExcelCreate
             }).AddEntityFrameworkStores<AppDbContext>();
 
             services.AddControllersWithViews();
-           
+            services.AddSignalR();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -69,6 +70,7 @@ namespace ExcelCreate
 
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapHub<MyHub>("/MyHub");
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
